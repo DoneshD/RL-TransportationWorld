@@ -46,38 +46,48 @@ class Agent:
         print("New cumulative reward:", self.cumulativeReward)
 
     def ascend(self):
-        if self.is_valid_move(self.x+1, self.y, self.z):
-            self.x += 1
-            return True
-        return False
-
-    def descend(self):
-        if self.is_valid_move(self.x-1, self.y, self.z):
-            self.x -= 1
-            return True
-        return False
-    
-    def move_right(self):
         if self.is_valid_move(self.x, self.y, self.z+1):
             self.z += 1
             return True
         return False
 
-    def move_left(self):
+
+    def descend(self):
+        # if self.is_valid_move(self.x-1, self.y, self.z):
+        #     self.x -= 1
+        #     return True
+        # return False
         if self.is_valid_move(self.x, self.y, self.z-1):
             self.z -= 1
             return True
         return False
+    
+    def move_right(self):
+        if self.is_valid_move(self.x, self.y+1, self.z):
+            self.y += 1
+            return True
+        return False
+        
 
-    def move_up(self):
+    def move_left(self):
+        # if self.is_valid_move(self.x, self.y, self.z-1):
+        #     self.z -= 1
+        #     return True
+        # return False
         if self.is_valid_move(self.x, self.y-1, self.z):
             self.y -= 1
             return True
         return False
 
+    def move_up(self):
+        if self.is_valid_move(self.x-1, self.y, self.z):
+            self.x -= 1
+            return True
+        return False
+
     def move_down(self):
-        if self.is_valid_move(self.x, self.y+1, self.z):
-            self.y += 1
+        if self.is_valid_move(self.x+1, self.y, self.z):
+            self.x += 1
             return True
         return False
 
@@ -136,12 +146,26 @@ agent = Agent(0, 0, 0, agent_env)
 print("Initial Environment: \n")
 initial_env.display_environment()
 # move the agent
+
+
 agent.ascend()
+agent.check_cell(initial_env)
+agent.ascend()
+agent.check_cell(initial_env)
+agent.descend()
 agent.check_cell(initial_env)
 agent.move_right()
 agent.check_cell(initial_env)
 agent.move_down()
 agent.check_cell(initial_env)
+agent.move_right()
+agent.check_cell(initial_env)
+agent.move_up()
+agent.check_cell(initial_env)
+agent.move_left()
+agent.check_cell(initial_env)
+
+
 
 print("New Environment after R risk: \n")
 initial_env.display_environment()
@@ -149,6 +173,3 @@ initial_env.display_environment()
 agent_pos = (agent.z, agent.x, agent.y)
 print("New Agent Environment after R risk: \n")
 agent.env.display_environment(agent_pos)
-
-
-
