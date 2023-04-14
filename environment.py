@@ -15,11 +15,17 @@ class Environment:
     def get_cell(self, x, y, z):
         return self.mapping[self.environment[x][y][z]]
 
-    def display_environment(self):
+    def display_environment(self, agent_pos=None):
         for i in range(3):
             print(f"Level {i+1}:")
-            for row in self.environment[i]:
-                print([self.mapping[cell] for cell in row])
+            for j, row in enumerate(self.environment[i]):
+                display_row = []
+                for k, cell in enumerate(row):
+                    if agent_pos and i == agent_pos[0] and j == agent_pos[1] and k == agent_pos[2]:
+                        display_row.append('A')
+                    else:
+                        display_row.append(self.mapping[cell])
+                print(display_row)
             print()
 
 
@@ -29,6 +35,15 @@ class Agent:
         self.y = y
         self.z = z
         self.env = env
+        self.cumulativeReward = 0
+
+    def add_reward(self, reward):
+        self.cumulativeReward += 10
+        print("New cumulative reward", self.cumulativeReward)
+
+    def remove_reward(self, reward):
+        self.cumulativeReward -= 10
+        print("New cumulative reward:", self.cumulativeReward)
 
     def ascend(self):
         if self.is_valid_move(self.x+1, self.y, self.z):
@@ -79,10 +94,22 @@ class Agent:
         cell_value = env.get_cell(x, y, z)
         if cell_value == 'P':
             print("Pickup +10")
+            initial_env.update_environment(agent.z, agent.x, agent.y, 0)
+            agent.env.update_environment(agent.z, agent.x, agent.y, 0)
+            agent.add_reward(agent.cumulativeReward)
+
         elif cell_value == 'D':
             print("Dropoff +5")
+            initial_env.update_environment(agent.z, agent.x, agent.y, 0)
+            agent.env.update_environment(agent.z, agent.x, agent.y, 0)
+            agent.add_reward(agent.cumulativeReward)
+
         elif cell_value == 'R':
             print("Risky -10")
+            initial_env.update_environment(agent.z, agent.x, agent.y, 0)
+            agent.env.update_environment(agent.z, agent.x, agent.y, 0)
+            agent.remove_reward(agent.cumulativeReward)
+            
         else:
             print("Nothing")
 
@@ -106,6 +133,8 @@ agent_env = Environment()
 agent_env.environment = initial_env.environment.copy()  # make a copy of the initial environment
 agent = Agent(0, 0, 0, agent_env)
 
+print("Initial Environment: \n")
+initial_env.display_environment()
 # move the agent
 agent.ascend()
 agent.check_cell(initial_env)
@@ -114,6 +143,12 @@ agent.check_cell(initial_env)
 agent.move_down()
 agent.check_cell(initial_env)
 
+print("New Environment after R risk: \n")
 initial_env.display_environment()
+
+agent_pos = (agent.z, agent.x, agent.y)
+print("New Agent Environment after R risk: \n")
+agent.env.display_environment(agent_pos)
+
 
 
