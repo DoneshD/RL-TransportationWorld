@@ -83,7 +83,7 @@ class Agent:
         return False
 
     def move_down(self):
-        if self.is_valid_move(self.x, self.y+1, self):
+        if self.is_valid_move(self.x, self.y+1, self.z):
             self.y += 1
             self.check_cell(initial_env)
             return True
@@ -155,10 +155,7 @@ agent.env.display_environment(agent_pos)
 # move the agent
 
 
-agent.move_right()
-agent.move_right()
-agent.move_up()
-agent.move_up()
+agent.move_down()
 
 print("New Environment: \n")
 initial_env.display_environment()
