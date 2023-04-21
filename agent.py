@@ -1,4 +1,6 @@
 import random
+from pprint import pprint
+
 
 class Agent:
     def __init__(self, x, y, z, env):
@@ -6,7 +8,8 @@ class Agent:
         self.y = y  # row
         self.z = z  # column
         self.env = env
-        self.pos = (x, y, z)
+        self.last_pos = None
+        self.has_pickup = False
         self.cumulativeReward = 0
 
         self.Qtable = {}
@@ -19,19 +22,34 @@ class Agent:
                         self.Qtable[state][action] = 0.0
 
     def add_pickkup_reward(self):
-        self.cumulativeReward += 10
-        print("New cumulative reward", self.cumulativeReward)
+        if self.env.pickups[(self.x, self.y, self.z)] == 0:
+            return -1
+        self.has_pickup = True
+        self.env.pickups[(self.x, self.y, self.z)] -= 1
+        if self.env.pickups[(self.x, self.y, self.z)] == 0:
+            self.env.update_environment(self.x, self.y, self.z, '-')
+            del self.env.pickups[(self.x, self.y, self.z)]
+        self.cumulativeReward += 14
+        return 14
 
     def add_dropoff_reward(self):
-        self.cumulativeReward += 5
-        print("New cumulative reward", self.cumulativeReward)
+        if self.env.dropoffs[(self.x, self.y, self.z)] == 0:
+            return -1
+        self.has_pickup = False
+        self.env.dropoffs[(self.x, self.y, self.z)] -= 1
+        if self.env.dropoffs[(self.x, self.y, self.z)] == 0:
+            self.env.update_environment(self.x, self.y, self.z, '-')
+            del self.env.dropoffs[(self.x, self.y, self.z)]
+        self.cumulativeReward += 14
+        return 14
 
     def remove_risk_reward(self):
-        self.cumulativeReward -= 10
-        print("New cumulative reward:", self.cumulativeReward)
+        self.cumulativeReward -= 2
+        return -2
 
     def ascend(self, env):
         if self.is_valid_move(self.x+1, self.y, self.z):
+            self.last_pos = (self.x, self.y, self.z)
             self.x += 1
             self.last_action = 'ascend'
             self.check_cell(env)
@@ -40,6 +58,7 @@ class Agent:
 
     def descend(self, env):
         if self.is_valid_move(self.x-1, self.y, self.z):
+            self.last_pos = (self.x, self.y, self.z)
             self.x -= 1
             self.last_action = 'descend'
             self.check_cell(env)
@@ -48,6 +67,7 @@ class Agent:
 
     def move_right(self, env):
         if self.is_valid_move(self.x, self.y, self.z+1):
+            self.last_pos = (self.x, self.y, self.z)
             self.z += 1
             self.last_action = 'move_right'
             self.check_cell(env)
@@ -56,6 +76,7 @@ class Agent:
 
     def move_left(self, env):
         if self.is_valid_move(self.x, self.y, self.z-1):
+            self.last_pos = (self.x, self.y, self.z)
             self.z -= 1
             self.last_action = 'move_left'
             self.check_cell(env)
@@ -64,6 +85,7 @@ class Agent:
 
     def move_up(self, env):
         if self.is_valid_move(self.x, self.y-1, self.z):
+            self.last_pos = (self.x, self.y, self.z)
             self.y -= 1
             self.last_action = 'move_up'
             self.check_cell(env)
@@ -72,6 +94,7 @@ class Agent:
 
     def move_down(self, env):
         if self.is_valid_move(self.x, self.y+1, self.z):
+            self.last_pos = (self.x, self.y, self.z)
             self.y += 1
             self.last_action = 'move_down'
             self.check_cell(env)
@@ -88,7 +111,7 @@ class Agent:
 
     def get_AgentCell(self, x, y, z):
         return self.env.get_cell(x, y, z)
-    
+
     def get_valid_actions(self, state):
         actions = []
         if self.is_valid_move(state[0]+1, state[1], state[2]):
@@ -104,158 +127,93 @@ class Agent:
         if self.is_valid_move(state[0], state[1]+1, state[2]):
             actions.append('move_down')
         return actions
-    
-    def update_q_table(self, state, action, reward, next_state, alpha, gamma):
-        # if state not in self.Qtable:
-        #     self.Qtable[state] = {}
-        if action not in self.Qtable[state]:
-            self.Qtable[state][action] = 0.0
-        old_value = self.Qtable[state][action]
-        next_max = max(self.Qtable[next_state].values())
-        new_value = (1 - alpha) * old_value + alpha * (reward + gamma * next_max)
-        self.Qtable[state][action] = new_value
+
+    def update_q_learning_q_table(self, reward, alpha, gamma):
+        print("----------------------Updating Qtable-------------------------------\n")
+        pos = (self.x, self.y, self.z)
+        old_value = self.Qtable[self.last_pos][self.last_action]
+        next_max = max(self.Qtable[pos].values())
+        new_value = ((1 - alpha) * old_value) + (alpha * (reward + (gamma * next_max)))
+        self.Qtable[self.last_pos][self.last_action] = new_value
         print("Updating", new_value)
+        print("----------------------Done Updating Qtable--------------------------\n")
 
-    
-    def chooseReward(self):
-        state = self.get_state()
-        valid_actions = self.get_valid_actions(state)
-        
-        # Check if pickup and dropoff are applicable
-        pickup_applicable = False
-        dropoff_applicable = False
-        for action in valid_actions:
-            if action == 'P':
-                pickup_applicable = True
-            elif action == 'D':
-                dropoff_applicable = True
-        
-        # Choose an applicable operator randomly
-        if pickup_applicable and dropoff_applicable:
-            action = random.choice(['P', 'D'])
-        elif pickup_applicable:
-            action = 'P'
-        elif dropoff_applicable:
-            action = 'D'
-        else:
-            action = random.choice(valid_actions)
 
-    
-
-    def check_cell(agent, env):
-        x, y, z = agent.x, agent.y, agent.z
-        cell_value = env.get_cell(x, y, z)
-        print("Agent pos: ", (x, y, z))
+    def check_cell(self, env):
+        cell_value = env.get_cell(self.x, self.y, self.z)
         print("Cell value: ", cell_value)
         if cell_value == 'P':
-            print("Pickup +10")
-            agent.add_pickkup_reward()
-            agent.update_q_table(agent.pos, agent.last_action, 10, agent.get_state(), alpha=0.3, gamma=0.5)
-            env.update_environment(agent.x, agent.y, agent.z, '-')
-            agent.env.update_environment(agent.x, agent.y, agent.z, '-')
+            if self.has_pickup:
+                print("Already has pickup")
+                self.update_q_learning_q_table(-1, alpha=0.3, gamma=0.5)
+                return
+
+            print("Pickup +14")
+            self.update_q_learning_q_table(self.add_pickkup_reward(), alpha=0.3, gamma=0.5)
 
         elif cell_value == 'D':
-            print("Dropoff +5")
-            agent.add_dropoff_reward()
-            agent.update_q_table(agent.pos, agent.last_action, 5, agent.get_state(), alpha=0.3, gamma=0.5)
-            env.update_environment(agent.x, agent.y, agent.z, '-')
-            agent.env.update_environment(agent.x, agent.y, agent.z, '-')
+            if not self.has_pickup:
+                print("No pickup")
+                self.update_q_learning_q_table(-1, alpha=0.3, gamma=0.5)
+                return
+
+            print("Dropoff +14")
+            self.update_q_learning_q_table(self.add_dropoff_reward(), alpha=0.3, gamma=0.5)
 
         elif cell_value == 'R':
-            print("Risky -10")
-            agent.remove_risk_reward()
-            agent.update_q_table(agent.pos, agent.last_action, -10, agent.get_state(), alpha=0.3, gamma=0.5)
-            env.update_environment(agent.x, agent.y, agent.z, '-')
-            agent.env.update_environment(agent.x, agent.y, agent.z, '-')
+            print("Risky -2")
+            self.update_q_learning_q_table(self.remove_risk_reward(), alpha=0.3, gamma=0.5)
+
         else:
+            self.update_q_learning_q_table(-1, alpha=0.3, gamma=0.5)
             print("Nothing")
 
     def q_learning(self, policy, learning_rate, discount_factor):
+            print("Q-Learning")
+            print("Policy:", policy)
+            print("Initial state:", (self.x, self.y, self.z))
+            print("Initial cumulativeReward", self.cumulativeReward)
+            print("Initial agent environment:")
+            pos = (self.x, self.y, self.z)
+            self.env.display_environment(pos)
+            for _ in range(500):
+                pos = (self.x, self.y, self.z)
+                if len(self.env.dropoffs) == 0:
+                    return
+                randomChoice = random.randint(0, 5)
+                if randomChoice == 0:
+                    print("Ascend")
+                    self.ascend(self.env)
+                elif randomChoice == 1:
+                    print("Descend")
+                    self.descend(self.env)
+                elif randomChoice == 2:
+                    print("Move up")
+                    self.move_up(self.env)
+                elif randomChoice == 3:
+                    print("Move down")
+                    self.move_down(self.env)
+                elif randomChoice == 4:
+                    print("Move left")
+                    self.move_left(self.env)
+                else:
+                    print("Move right")
+                    self.move_right(self.env)
+            pprint(self.Qtable)
+            print("Pickup blocks", self.env.pickups)
+            print("Dropoff blocks", self.env.dropoffs)
+            self.env.display_environment(pos)
+
+            if policy == "Random":
+                print("Do 9500 loops Random")
+            elif policy == "Greedy":
+                print("Do 9500 loops Greedy")
+            elif policy == "Exploit":
+                print("Do 9500 loops Exploit")
+            else:
+                print("Invalid policy")
+            
         
-        if policy == "Random":
-            print("Q-Learning")
-            print("Policy:", policy)
-            print("Initial state:", (self.x, self.y, self.z))
-            print("Initial cumulativeReward", self.cumulativeReward)
-            print("Initial agent environment:")
-            self.env.display_environment(self.pos)
-            for _ in range(10000):
-                self.chooseReward()
-                randomChoice = random.randint(0, 5)
-                if randomChoice == 0:
-                    self.ascend(self.env)
-                elif randomChoice == 1:
-                    self.descend(self.env)
-                elif randomChoice == 2:
-                    self.move_up(self.env)
-                elif randomChoice == 3:
-                    self.move_down(self.env)
-                elif randomChoice == 4:
-                    self.move_left(self.env)
-                else:
-                    self.move_right(self.env)
-            print(self.Qtable)
-            self.env.display_environment(self.pos)
-        else:
-            print("Invalid policy")
-
-        if policy == "Exploit":
-            print("Q-Learning")
-            print("Policy:", policy)
-            print("Initial state:", (self.x, self.y, self.z))
-            print("Initial cumulativeReward", self.cumulativeReward)
-            print("Initial agent environment:")
-            self.env.display_environment(self.pos)
-            for _ in range(500):
-                self.chooseReward()
-                randomChoice = random.randint(0, 5)
-                if randomChoice == 0:
-                    self.ascend(self.env)
-                elif randomChoice == 1:
-                    self.descend(self.env)
-                elif randomChoice == 2:
-                    self.move_up(self.env)
-                elif randomChoice == 3:
-                    self.move_down(self.env)
-                elif randomChoice == 4:
-                    self.move_left(self.env)
-                else:
-                    self.move_right(self.env)
-            print(self.Qtable)
-            self.env.display_environment(self.pos)
-        else:
-            print("Invalid policy")
-
-        if policy == "Greedy":
-            print("Q-Learning")
-            print("Policy:", policy)
-            print("Initial state:", (self.x, self.y, self.z))
-            print("Initial cumulativeReward", self.cumulativeReward)
-            print("Initial agent environment:")
-            self.env.display_environment(self.pos)
-            for _ in range(500):
-                self.chooseReward()
-                randomChoice = random.randint(0, 5)
-                if randomChoice == 0:
-                    self.ascend(self.env)
-                elif randomChoice == 1:
-                    self.descend(self.env)
-                elif randomChoice == 2:
-                    self.move_up(self.env)
-                elif randomChoice == 3:
-                    self.move_down(self.env)
-                elif randomChoice == 4:
-                    self.move_left(self.env)
-                else:
-                    self.move_right(self.env)
-            print(self.Qtable)
-            self.env.display_environment(self.pos)
-        else:
-            print("Invalid policy")
-            
-            
-
-            
 
     def sarsa(self, policy, learning_rate, discount_factor):
         print("SARSA")
@@ -263,4 +221,3 @@ class Agent:
         print("Initial state:", (self.x, self.y, self.z))
         print("Initial cumulativeReward", self.cumulativeReward)
         print("Initial agent environment:")
-        self.env.display_environment(self.pos)

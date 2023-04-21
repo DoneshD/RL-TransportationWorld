@@ -3,12 +3,18 @@ class Environment:
         # Define a 3x3x3 matrix
         self.environment = [[['-' for _ in range(3)] for _ in range(3)]
                             for _ in range(3)]
+        self.pickups = dict()
+        self.dropoffs = dict()
 
     def delete_environment(self):
         self.environment = None
 
     def update_environment(self, x, y, z, value):
         self.environment[x][y][z] = value
+        if value == 'P':
+            self.pickups[(x, y, z)] = 10
+        elif value == 'D':
+            self.dropoffs[(x, y, z)] = 5
 
     def get_cell(self, x, y, z):
         return self.environment[x][y][z]

@@ -2,8 +2,6 @@ import agent
 import argparse
 import environment
 
-import numpy as np
-import random
 
 def main(algorithm=None, policy=None, lr=None, d=None):
     # create environment
@@ -22,6 +20,8 @@ def main(algorithm=None, policy=None, lr=None, d=None):
     # create an agent
     agent_env = environment.Environment()
     agent_env.environment = env.environment.copy()
+    agent_env.pickups = env.pickups.copy()
+    agent_env.dropoffs = env.dropoffs.copy()
     agent_one = agent.Agent(0, 2, 0, agent_env)
 
     # check which algorithm to run
