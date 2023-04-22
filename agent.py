@@ -395,6 +395,9 @@ class Agent:
             print("Initial cumulativeReward", self.cumulativeReward)
             print("Initial agent environment:")
             pos = (self.x, self.y, self.z)
+            randomCounter = 0
+            greedyCounter = 0
+            exploitCounter = 0
             
             self.env.display_environment(pos)
             for _ in range(500):
@@ -434,12 +437,14 @@ class Agent:
 
             if policy == "Random":
                 for _ in range(9500):
+                    randomCounter += 1
                     pos = (self.x, self.y, self.z)
                     if len(self.env.dropoffs) == 0:
                         pprint(self.Qtable)
                         print("Pickup blocks", self.env.pickups)
                         print("Dropoff blocks", self.env.dropoffs)
                         self.env.display_environment(pos)
+                        print("Number of moves:", randomCounter + 500)
                         print("Random - Ended before 9500")
                         return
                     randomChoice = random.randint(0, 5)
@@ -465,12 +470,14 @@ class Agent:
 
             elif policy == "Greedy":
                 for _ in range(9500):
+                    greedyCounter += 1
                     pos = (self.x, self.y, self.z)
                     if len(self.env.dropoffs) == 0:
                         pprint(self.Qtable)
                         print("Pickup blocks", self.env.pickups)
                         print("Dropoff blocks", self.env.dropoffs)
                         self.env.display_environment(pos)
+                        print("Number of moves:", greedyCounter + 500)
                         print("Greedy - Ended before 9500")
                         return
                     #pprint(self.Qtable)
@@ -483,12 +490,14 @@ class Agent:
 
             elif policy == "Exploit":
                 for _ in range(9500):
+                    exploitCounter += 1
                     pos = (self.x, self.y, self.z)
                     if len(self.env.dropoffs) == 0:
                         pprint(self.Qtable)
                         print("Pickup blocks", self.env.pickups)
                         print("Dropoff blocks", self.env.dropoffs)
                         self.env.display_environment(pos)
+                        print("Number of moves:", exploitCounter + 500)
                         print("Exploit - Ended before 9500")
                         return
                     #pprint(self.Qtable)
