@@ -5,14 +5,16 @@ from pprint import pprint
 
 
 class Agent:
-    def __init__(self, x, y, z, env):
+    def __init__(self, x, y, z, env, qlearning):
         self.x = x  # level
         self.y = y  # row
         self.z = z  # column
         self.env = env
+        self.qlearning = qlearning
         self.last_pos = None
         self.has_pickup = False
         self.cumulativeReward = 0
+        self.next_x, self.next_y, self.next_z = 0, 0, 0
 
         self.Qtable = {}
         for x in range(3):
@@ -140,6 +142,28 @@ class Agent:
         print("Updating", new_value)
         print("----------------------Done Updating Qtable--------------------------\n")
 
+    def update_sarsa_q_table(self, reward, alpha, gamma):
+        print("----------------------Updating Qtable-------------------------------\n")
+        pos = (self.x, self.y, self.z)
+        old_value = self.Qtable[self.last_pos][self.last_action]
+        next_pos = (self.next_x, self.next_y, self.next_z)
+        next_action = self.get_next_action(next_pos) 
+        next_value = self.Qtable[next_pos][next_action]
+        new_value = ((1 - alpha) * old_value) + (alpha * (reward + (gamma * next_value)))
+        self.Qtable[self.last_pos][self.last_action] = new_value
+        print("Updating", new_value)
+        print("----------------------Done Updating Qtable--------------------------\n")
+
+    def get_next_action(self, pos, epsilon=0.1):
+        if random.uniform(0, 1) < epsilon:
+            # Select a random action with probability epsilon
+            action = random.choice(list(self.Qtable[pos].keys()))
+        else:
+            # Select the action with the highest Q-value with probability 1-epsilon
+            action = max(self.Qtable[pos], key=self.Qtable[pos].get)
+        return action
+
+
 
     def check_cell(self, env):
         cell_value = env.get_cell(self.x, self.y, self.z)
@@ -147,27 +171,45 @@ class Agent:
         if cell_value == 'P':
             if self.has_pickup:
                 print("Already has pickup")
-                self.update_q_learning_q_table(-1, alpha=0.3, gamma=0.5)
+                if self.qlearning:
+                    self.update_q_learning_q_table(-1, alpha=0.3, gamma=0.5)
+                else:
+                    self.update_sarsa_q_table(-1, alpha=0.3, gamma=0.5)
                 return
 
             print("Pickup +14")
-            self.update_q_learning_q_table(self.add_pickkup_reward(), alpha=0.3, gamma=0.5)
+            if self.qlearning:
+                self.update_q_learning_q_table(self.add_pickkup_reward(), alpha=0.3, gamma=0.5)
+            else:
+                self.update_sarsa_q_table(self.add_pickkup_reward(), alpha=0.3, gamma=0.5)
 
         elif cell_value == 'D':
             if not self.has_pickup:
                 print("No pickup")
-                self.update_q_learning_q_table(-1, alpha=0.3, gamma=0.5)
+                if self.qlearning:
+                    self.update_q_learning_q_table(-1, alpha=0.3, gamma=0.5)
+                else:
+                    self.update_sarsa_q_table(-1, alpha=0.3, gamma=0.5)
                 return
 
             print("Dropoff +14")
-            self.update_q_learning_q_table(self.add_dropoff_reward(), alpha=0.3, gamma=0.5)
+            if self.qlearning:
+                self.update_q_learning_q_table(self.add_dropoff_reward(), alpha=0.3, gamma=0.5)
+            else:
+                self.update_sarsa_q_table(self.add_dropoff_reward(), alpha=0.3, gamma=0.5)
 
         elif cell_value == 'R':
             print("Risky -2")
-            self.update_q_learning_q_table(self.remove_risk_reward(), alpha=0.3, gamma=0.5)
+            if self.qlearning:
+                self.update_q_learning_q_table(self.remove_risk_reward(), alpha=0.3, gamma=0.5)
+            else:
+                self.update_sarsa_q_table(self.remove_risk_reward(), alpha=0.3, gamma=0.5)
 
         else:
-            self.update_q_learning_q_table(-1, alpha=0.3, gamma=0.5)
+            if self.qlearning:
+                self.update_q_learning_q_table(-1, alpha=0.3, gamma=0.5)
+            else:
+                self.update_sarsa_q_table(-1, alpha=0.3, gamma=0.5)
             print("Nothing")
 
 
@@ -345,13 +387,14 @@ class Agent:
 
 
     
-    def q_learning(self, policy, learning_rate, discount_factor):
+    def TransformationWorld(self, policy):
             print("Q-Learning")
             print("Policy:", policy)
             print("Initial state:", (self.x, self.y, self.z))
             print("Initial cumulativeReward", self.cumulativeReward)
             print("Initial agent environment:")
             pos = (self.x, self.y, self.z)
+            
             self.env.display_environment(pos)
             for _ in range(500):
                 pos = (self.x, self.y, self.z)
@@ -360,7 +403,7 @@ class Agent:
                     print("Pickup blocks", self.env.pickups)
                     print("Dropoff blocks", self.env.dropoffs)
                     self.env.display_environment(pos)
-                    print("Ended before")
+                    print("Ended before 500")
                     return
                 randomChoice = random.randint(0, 5)
                 if randomChoice == 0:
@@ -389,18 +432,45 @@ class Agent:
             print("Ended first 500")
 
             if policy == "Random":
-                print("Do 9500 loops Random")
+                for _ in range(9500):
+                    pos = (self.x, self.y, self.z)
+                    if len(self.env.dropoffs) == 0:
+                        pprint(self.Qtable)
+                        print("Pickup blocks", self.env.pickups)
+                        print("Dropoff blocks", self.env.dropoffs)
+                        self.env.display_environment(pos)
+                        print("Random - Ended before 9500")
+                        return
+                    randomChoice = random.randint(0, 5)
+                    if randomChoice == 0:
+                        print("Ascend")
+                        self.ascend(self.env)
+                    elif randomChoice == 1:
+                        print("Descend")
+                        self.descend(self.env)
+                    elif randomChoice == 2:
+                        print("Move up")
+                        self.move_up(self.env)
+                    elif randomChoice == 3:
+                        print("Move down")
+                        self.move_down(self.env)
+                    elif randomChoice == 4:
+                        print("Move left")
+                        self.move_left(self.env)
+                    else:
+                        print("Move right")
+                        self.move_right(self.env)
 
 
             elif policy == "Greedy":
                 for _ in range(9500):
                     pos = (self.x, self.y, self.z)
                     if len(self.env.dropoffs) == 0:
-                        #pprint(self.Qtable)
+                        pprint(self.Qtable)
                         print("Pickup blocks", self.env.pickups)
                         print("Dropoff blocks", self.env.dropoffs)
                         self.env.display_environment(pos)
-                        print("Greedy - Ended before")
+                        print("Greedy - Ended before 9500")
                         return
                     #pprint(self.Qtable)
 
@@ -414,11 +484,11 @@ class Agent:
                 for _ in range(9500):
                     pos = (self.x, self.y, self.z)
                     if len(self.env.dropoffs) == 0:
-                        #pprint(self.Qtable)
+                        pprint(self.Qtable)
                         print("Pickup blocks", self.env.pickups)
                         print("Dropoff blocks", self.env.dropoffs)
                         self.env.display_environment(pos)
-                        print("Exploit - Ended before")
+                        print("Exploit - Ended before 9500")
                         return
                     #pprint(self.Qtable)
                     print("Pickup blocks", self.env.pickups)
@@ -437,4 +507,3 @@ class Agent:
         print("Initial state:", (self.x, self.y, self.z))
         print("Initial cumulativeReward", self.cumulativeReward)
         print("Initial agent environment:")
-

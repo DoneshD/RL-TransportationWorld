@@ -3,7 +3,7 @@ import argparse
 import environment
 
 
-def main(algorithm=None, policy=None, lr=None, d=None):
+def main(algorithm=None, policy=None):
     # create environment
     env = environment.Environment()
 
@@ -22,13 +22,17 @@ def main(algorithm=None, policy=None, lr=None, d=None):
     agent_env.environment = env.environment.copy()
     agent_env.pickups = env.pickups.copy()
     agent_env.dropoffs = env.dropoffs.copy()
-    agent_one = agent.Agent(0, 2, 0, agent_env)
+    
 
     # check which algorithm to run
     if algorithm == 'Q-Learning' or algorithm == 'Q':
-        agent_one.q_learning(policy, lr, d)
+        agent_one = agent.Agent(0, 2, 0, agent_env, True)
+        agent_one.TransformationWorld(policy)
     elif algorithm == 'SARSA' or algorithm == 'S':
-        agent_one.sarsa(policy, lr, d)
+        agent_one = agent.Agent(0, 2, 0, agent_env, False)
+        agent_one.TransformationWorld(policy)
+    else:
+        print("Input valid parameters")
 
 
 if __name__ == '__main__':
@@ -36,10 +40,6 @@ if __name__ == '__main__':
     parser.add_argument('-a', help='algorithm to run', metavar='algorithm',
                         required=True)
     parser.add_argument('-p', help='policy to run', metavar='policy',
-                        required=True)
-    parser.add_argument('-lr', help='learning rate', metavar='learning rate',
-                        required=True)
-    parser.add_argument('-d', help='discount rate', metavar='discount',
                         required=True)
     args = parser.parse_args()
     main(args.a, args.p)
