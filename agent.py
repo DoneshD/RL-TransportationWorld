@@ -1,4 +1,4 @@
-# greedy and exploit working for q-learning
+# fixed exploit bug
 
 import random
 from pprint import pprint
@@ -147,7 +147,7 @@ class Agent:
         pos = (self.x, self.y, self.z)
         old_value = self.Qtable[self.last_pos][self.last_action]
         next_pos = (self.next_x, self.next_y, self.next_z)
-        next_action = self.get_next_action(next_pos) 
+        next_action = self.get_next_action(next_pos)
         next_value = self.Qtable[next_pos][next_action]
         new_value = ((1 - alpha) * old_value) + (alpha * (reward + (gamma * next_value)))
         self.Qtable[self.last_pos][self.last_action] = new_value
@@ -309,7 +309,8 @@ class Agent:
                     tie_index = random.randint(0, last_tie_index)
                 different_index = random.randint(tie_index+1, len(action_q_value_pair)-1)
                 prob_dist = [0.85, 0.15]
-                index = random.choices([tie_index, different_index], weights=prob_dist, k=2)
+                temp_index = random.choices([tie_index, different_index], weights=prob_dist, k=1)
+                index = temp_index[0]
 
         print(action_q_value_pair[index][0],action_q_value_pair[index][1])
         action_str = action_q_value_pair[index][0]
