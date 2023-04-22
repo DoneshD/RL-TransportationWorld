@@ -509,11 +509,3 @@ class Agent:
             else:
                 print("Invalid policy")
             
-        
-
-    def sarsa(self, policy, learning_rate, discount_factor):
-        print("SARSA")
-        print("Policy:", policy)
-        print("Initial state:", (self.x, self.y, self.z))
-        print("Initial cumulativeReward", self.cumulativeReward)
-        print("Initial agent environment:")
